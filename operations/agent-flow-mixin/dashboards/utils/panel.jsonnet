@@ -30,9 +30,10 @@
     },
   },
 
-  newHeatmap(title=''):: $.new(title, 'heatmap-new') {
+  newHeatmap(title='', unit=''):: $.new(title, 'heatmap') {
     maxDataPoints: 30,
     options: {
+      calculate: false,
       color: {
         exponent: 0.5,
         fill: 'dark-orange',
@@ -52,10 +53,22 @@
         yHistogram: true,
       },
       yAxis: {
-        unit: 's',
+        unit: unit,
       },
     },
     pluginVersion: '9.0.6',
+  },
+
+  newNativeHistogramHeatmap(title='', unit=''):: $.newHeatmap(title, unit) {
+    options+: {
+      cellGap: 0,
+      color: {
+        scheme: 'Spectral',
+      },
+      filterValues: {
+        le: 0.1,
+      },
+    },
   },
 
   withMultiTooltip():: {
@@ -72,8 +85,34 @@
     },
   },
 
+  withOverrides(overrides):: {
+    fieldConfig+: {
+      overrides: overrides,
+    },
+  },
+
+  withMappings(mappings):: {
+    fieldConfig+: {
+      defaults+: {
+        mappings: mappings,
+      },
+    },
+  },
+
+  withCenteredAxis():: {
+    fieldConfig+: {
+      defaults+: {
+        custom+: {
+          axisCenteredZero: true,
+        },
+      },
+    },
+  },
+
   withPosition(pos):: { gridPos: pos },
   withDescription(desc):: { description: desc },
+  withOptions(options):: { options: options },
+  withTransformations(transformations):: { transformations: transformations },
 
   withQueries(queries):: { targets: queries },
 
@@ -92,4 +131,17 @@
       instant: true,
     }
   ),
+
+  newNamedInstantQuery(expr='', refId='', format=null, legendFormat='__auto'):: std.prune(
+    $.newQuery(expr, format, legendFormat) {
+      range: false,
+      instant: true,
+      refId: refId,
+    }
+  ),
+
+  newRow(title='', x=0, y=0, w=24, h=1, collapsed=false)::
+    $.new(title, 'row')
+    + $.withPosition({ x: x, y: y, w: w, h: h })
+    + { collapsed: collapsed },
 }

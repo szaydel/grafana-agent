@@ -4,7 +4,7 @@
 # default when running `docker buildx build` or when DOCKER_BUILDKIT=1 is set
 # in environment variables.
 
-FROM --platform=$BUILDPLATFORM grafana/agent-build-image:0.22.0 as build
+FROM --platform=$BUILDPLATFORM grafana/agent-build-image:0.41.3 as build
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM
 ARG TARGETOS
@@ -18,11 +18,11 @@ WORKDIR /src/agent
 
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    GOOS=$TARGETOS GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} \
+    GOOS=$TARGETOS GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} GO_TAGS=netgo \
     RELEASE_BUILD=${RELEASE_BUILD} VERSION=${VERSION} \
     make operator
 
-FROM ubuntu:jammy
+FROM public.ecr.aws/ubuntu/ubuntu:noble
 
 LABEL org.opencontainers.image.source="https://github.com/grafana/agent"
 
@@ -34,5 +34,4 @@ RUN <<EOF
 EOF
 
 COPY --from=build /src/agent/build/grafana-agent-operator /bin/grafana-agent-operator
-RUN ln -sv /bin/grafana-agent-operator /bin/agent-operator
 ENTRYPOINT ["/bin/grafana-agent-operator"]

@@ -10,11 +10,10 @@ go_modules:
   - github.com/prometheus/memcached_exporter
   - github.com/prometheus/node_exporter
   - github.com/prometheus/statsd_exporter
-  - github.com/weaveworks/common
   - go.opentelemetry.io/collector
   - sigs.k8s.io/controller-runtime
 
-# List of Github repos to check for newer tags. Only repos that are not listed
+# List of GitHub repos to check for newer tags. Only repos that are not listed
 # explicitly in go.mod *OR* are in go.mod but replaced with a fork should be
 # added here.
 #
@@ -24,10 +23,10 @@ github_repos:
   - github.com/google/dnsmasq_exporter v0.2.0
   - github.com/ncabatoff/process-exporter v0.7.5
   - github.com/prometheus/mysqld_exporter v0.13.0
-  - github.com/prometheus-community/postgres_exporter v0.10.0
+  - github.com/prometheus-community/postgres_exporter v0.15.0
   - github.com/prometheus-community/windows_exporter v0.16.0
   - github.com/percona/mongodb_exporter v0.20.7
   - project: github.com/prometheus/prometheus
-    version: v2.39.1
+    version: v2.42.0
     # Ignore release candidates
     ignore_version_pattern: '-rc\.\d+$'
