@@ -1,10 +1,17 @@
 ---
+aliases:
+- /docs/grafana-cloud/agent/flow/reference/components/otelcol.receiver.opencensus/
+- /docs/grafana-cloud/monitor-infrastructure/agent/flow/reference/components/otelcol.receiver.opencensus/
+- /docs/grafana-cloud/monitor-infrastructure/integrations/agent/flow/reference/components/otelcol.receiver.opencensus/
+- /docs/grafana-cloud/send-data/agent/flow/reference/components/otelcol.receiver.opencensus/
+canonical: https://grafana.com/docs/agent/latest/flow/reference/components/otelcol.receiver.opencensus/
+description: Learn about otelcol.receiver.opencensus
 title: otelcol.receiver.opencensus
 ---
 
 # otelcol.receiver.opencensus
 
-`otelcol.receiver.opencensus` accepts telemetry data via gRPC or HTTP 
+`otelcol.receiver.opencensus` accepts telemetry data via gRPC or HTTP
 using the [OpenCensus](https://opencensus.io/) format and
 forwards it to other `otelcol.*` components.
 
@@ -36,7 +43,7 @@ otelcol.receiver.opencensus "LABEL" {
 Name | Type | Description | Default | Required
 ---- | ---- | ----------- | ------- | --------
 `cors_allowed_origins` | `list(string)` | A list of allowed Cross-Origin Resource Sharing (CORS) origins. |  | no
-`endpoint` | `string` | `host:port` to listen for traffic on. | `"0.0.0.0:4317"` | no
+`endpoint` | `string` | `host:port` to listen for traffic on. | `"0.0.0.0:55678"` | no
 `transport` | `string` | Transport to use for the gRPC server. | `"tcp"` | no
 `max_recv_msg_size` | `string` | Maximum size of messages the server will accept. 0 disables a limit. | | no
 `max_concurrent_streams` | `number` | Limit the number of concurrent streaming RPC calls. | | no
@@ -52,7 +59,7 @@ The "endpoint" parameter is the same for both gRPC and HTTP/JSON, as the protoco
 
 To write traces with HTTP/JSON, `POST` to `[address]/v1/trace`. The JSON message format parallels the gRPC protobuf format. For details, refer to its [OpenApi specification](https://github.com/census-instrumentation/opencensus-proto/blob/master/gen-openapi/opencensus/proto/agent/trace/v1/trace_service.swagger.json).
 
-Note that `max_recv_msg_size`, `read_buffer_size` and `write_buffer_size` are formatted in a way so that the units are included 
+Note that `max_recv_msg_size`, `read_buffer_size` and `write_buffer_size` are formatted in a way so that the units are included
 in the string, such as "512KiB" or "1024KB".
 
 ## Blocks
@@ -66,6 +73,7 @@ tls | [tls][] | Configures TLS for the gRPC server. | no
 keepalive | [keepalive][] | Configures keepalive settings for the configured server. | no
 keepalive > server_parameters | [server_parameters][] | Server parameters used to configure keepalive settings. | no
 keepalive > enforcement_policy | [enforcement_policy][] | Enforcement policy for keepalive settings. | no
+debug_metrics | [debug_metrics][] | Configures the metrics that this component generates to monitor its state. | no
 output | [output][] | Configures where to send received telemetry data. | yes
 
 The `>` symbol indicates deeper levels of nesting. For example, `grpc > tls`
@@ -75,6 +83,7 @@ refers to a `tls` block defined inside a `grpc` block.
 [keepalive]: #keepalive-block
 [server_parameters]: #server_parameters-block
 [enforcement_policy]: #enforcement_policy-block
+[debug_metrics]: #debug_metrics-block
 [output]: #output-block
 
 ### tls block
@@ -82,17 +91,7 @@ refers to a `tls` block defined inside a `grpc` block.
 The `tls` block configures TLS settings used for a server. If the `tls` block
 isn't provided, TLS won't be used for connections to the server.
 
-The following arguments are supported:
-
-Name | Type | Description | Default | Required
----- | ---- | ----------- | ------- | --------
-`ca_file` | `string` | Path to the CA file. | | no
-`cert_file` | `string` | Path to the TLS certificate. | | no
-`key_file` | `string` | Path to the TLS certificate key. | | no
-`min_version` | `string` | Minimum acceptable TLS version for connections. | `"TLS 1.2"` | no
-`max_version` | `string` | Maximum acceptable TLS version for connections. | `"TLS 1.3"` | no
-`reload_interval` | `duration` | Frequency to reload the certificates. | | no
-`client_ca_file` | `string` | Path to the CA file used to authenticate client certificates. | | no
+{{< docs/shared lookup="flow/reference/components/otelcol-tls-config-block.md" source="agent" version="<AGENT_VERSION>" >}}
 
 ### keepalive block
 
@@ -130,9 +129,13 @@ Name | Type | Description | Default | Required
 `min_time` | `duration` | Minimum time clients should wait before sending a keepalive ping. | `"5m"` | no
 `permit_without_stream` | `boolean` | Allow clients to send keepalive pings when there are no active streams. | `false` | no
 
+### debug_metrics block
+
+{{< docs/shared lookup="flow/reference/components/otelcol-debug-metrics-block.md" source="agent" version="<AGENT_VERSION>" >}}
+
 ### output block
 
-{{< docs/shared lookup="flow/reference/components/output-block.md" source="agent" >}}
+{{< docs/shared lookup="flow/reference/components/output-block.md" source="agent" version="<AGENT_VERSION>" >}}
 
 ## Exported fields
 
@@ -155,55 +158,70 @@ finally sending it to an OTLP-capable endpoint:
 
 ```river
 otelcol.receiver.opencensus "default" {
-	cors_allowed_origins = ["https://*.test.com", "https://test.com"]
+    cors_allowed_origins = ["https://*.test.com", "https://test.com"]
 
-	endpoint  = "0.0.0.0:9090"
-	transport = "tcp"
+    endpoint  = "0.0.0.0:9090"
+    transport = "tcp"
 
-	max_recv_msg_size      = "32KB"
-	max_concurrent_streams = "16"
-	read_buffer_size       = "1024KB"
-	write_buffer_size      = "1024KB"
-	include_metadata       = true
+    max_recv_msg_size      = "32KB"
+    max_concurrent_streams = "16"
+    read_buffer_size       = "1024KB"
+    write_buffer_size      = "1024KB"
+    include_metadata       = true
 
-	tls {
-		cert_file = "test.crt"
-		key_file  = "test.key"
-	}
+    tls {
+        cert_file = "test.crt"
+        key_file  = "test.key"
+    }
 
-	keepalive {
-		server_parameters {
-			max_connection_idle      = "11s"
-			max_connection_age       = "12s"
-			max_connection_age_grace = "13s"
-			time                     = "30s"
-			timeout                  = "5s"
-		}
+    keepalive {
+        server_parameters {
+            max_connection_idle      = "11s"
+            max_connection_age       = "12s"
+            max_connection_age_grace = "13s"
+            time                     = "30s"
+            timeout                  = "5s"
+        }
 
-		enforcement_policy {
-			min_time              = "10s"
-			permit_without_stream = true
-		}
-	}
+        enforcement_policy {
+            min_time              = "10s"
+            permit_without_stream = true
+        }
+    }
 
-	output {
-		metrics = [otelcol.processor.batch.default.input]
-		logs    = [otelcol.processor.batch.default.input]
-		traces  = [otelcol.processor.batch.default.input]
-	}
+    output {
+        metrics = [otelcol.processor.batch.default.input]
+        logs    = [otelcol.processor.batch.default.input]
+        traces  = [otelcol.processor.batch.default.input]
+    }
 }
 
 otelcol.processor.batch "default" {
-	output {
-		metrics = [otelcol.exporter.otlp.default.input]
-		logs    = [otelcol.exporter.otlp.default.input]
-		traces  = [otelcol.exporter.otlp.default.input]
-	}
+    output {
+        metrics = [otelcol.exporter.otlp.default.input]
+        logs    = [otelcol.exporter.otlp.default.input]
+        traces  = [otelcol.exporter.otlp.default.input]
+    }
 }
 
 otelcol.exporter.otlp "default" {
-	client {
-		endpoint = env("OTLP_ENDPOINT")
-	}
+    client {
+        endpoint = env("OTLP_ENDPOINT")
+    }
 }
 ```
+<!-- START GENERATED COMPATIBLE COMPONENTS -->
+
+## Compatible components
+
+`otelcol.receiver.opencensus` can accept arguments from the following components:
+
+- Components that export [OpenTelemetry `otelcol.Consumer`](../../compatibility/#opentelemetry-otelcolconsumer-exporters)
+
+
+{{< admonition type="note" >}}
+Connecting some components may not be sensible or components may require further configuration to make the connection work correctly.
+Refer to the linked documentation for more details.
+{{< /admonition >}}
+
+<!-- END GENERATED COMPATIBLE COMPONENTS -->

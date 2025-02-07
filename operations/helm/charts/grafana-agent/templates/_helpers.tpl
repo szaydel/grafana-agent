@@ -27,7 +27,11 @@ If release name contains chart name it will be used as a full name.
 Create chart name and version as used by the chart label.
 */}}
 {{- define "grafana-agent.chart" -}}
+{{- if index .Values "$chart_tests" }}
+{{- printf "%s" .Chart.Name | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- else }}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
+{{- end }}
 {{- end }}
 
 {{/*
@@ -47,10 +51,16 @@ Common labels
 {{- define "grafana-agent.labels" -}}
 helm.sh/chart: {{ include "grafana-agent.chart" . }}
 {{ include "grafana-agent.selectorLabels" . }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
-{{- end }}
+{{- if index .Values "$chart_tests" }}
+app.kubernetes.io/version: "vX.Y.Z"
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- else }}
+{{/* substr trims delimeter prefix char from grafana-agent.imageId output 
+    e.g. ':' for tags and '@' for digests.
+    For digests, we crop the string to a 7-char (short) sha. */}}
+app.kubernetes.io/version: {{ (include "grafana-agent.imageId" .) | trunc 15 | trimPrefix "@sha256" | trimPrefix ":" | quote }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
 {{- end }}
 
 {{/*
@@ -73,13 +83,36 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
-Calculate name of image tag to use.
+Calculate name of image ID to use for "grafana-agent".
 */}}
-{{- define "grafana-agent.imageTag" -}}
-{{- if .Values.image.tag -}}
-{{- .Values.image.tag }}
-{{- else -}}
-{{- .Chart.AppVersion }}
+{{- define "grafana-agent.imageId" -}}
+{{- if .Values.image.digest }}
+{{- $digest := .Values.image.digest }}
+{{- if not (hasPrefix "sha256:" $digest) }}
+{{- $digest = printf "sha256:%s" $digest }}
+{{- end }}
+{{- printf "@%s" $digest }}
+{{- else if .Values.image.tag }}
+{{- printf ":%s" .Values.image.tag }}
+{{- else }}
+{{- printf ":%s" .Chart.AppVersion }}
+{{- end }}
+{{- end }}
+
+{{/*
+Calculate name of image ID to use for "config-reloader".
+*/}}
+{{- define "config-reloader.imageId" -}}
+{{- if .Values.configReloader.image.digest }}
+{{- $digest := .Values.configReloader.image.digest }}
+{{- if not (hasPrefix "sha256:" $digest) }}
+{{- $digest = printf "sha256:%s" $digest }}
+{{- end }}
+{{- printf "@%s" $digest }}
+{{- else if .Values.configReloader.image.tag }}
+{{- printf ":%s" .Values.configReloader.image.tag }}
+{{- else }}
+{{- printf ":%s" "v0.8.0" }}
 {{- end }}
 {{- end }}
 

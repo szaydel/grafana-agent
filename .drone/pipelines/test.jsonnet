@@ -8,10 +8,7 @@ local pipelines = import '../util/pipelines.jsonnet';
     },
     steps: [{
       name: 'Lint',
-      // TODO(rfratto): the build image is swapped out for golangci-lint while
-      // we're waiting for golangci-lint to support Go 1.20. Replace back with
-      // build_image.linux when it works again.
-      image: 'golangci/golangci-lint:v1.50.1',
+      image: build_image.linux,
       commands: [
         'apt-get update -y && apt-get install -y libsystemd-dev',
         'make lint',
@@ -36,17 +33,17 @@ local pipelines = import '../util/pipelines.jsonnet';
     }],
   },
 
-  pipelines.linux('Test manifests') {
+  pipelines.linux('Test crds') {
     trigger: {
       event: ['pull_request'],
     },
     steps: [{
-      name: 'Regenerate environment manifests',
+      name: 'Regenerate crds',
       image: build_image.linux,
 
       commands: [
-        'make generate-manifests',
-        'ERR_MSG="The environment manifests are out of date. Please run \'make generate-manifests\' and commit changes!"',
+        'make generate-crds',
+        'ERR_MSG="Custom Resource Definitions are out of date. Please run \'make generate-crds\' and commit changes!"',
         // "git status --porcelain" reports if there's any new, modified, or deleted files.
         'if [ ! -z "$(git status --porcelain)" ]; then echo $ERR_MSG >&2; exit 1; fi',
       ],
@@ -56,6 +53,20 @@ local pipelines = import '../util/pipelines.jsonnet';
   pipelines.linux('Test') {
     trigger: {
       event: ['pull_request'],
+    },
+    steps: [{
+      name: 'Run Go tests',
+      image: build_image.linux,
+
+      commands: [
+        'make GO_TAGS="nodocker" test',
+      ],
+    }],
+  },
+
+  pipelines.linux('Test (Full)') {
+    trigger: {
+      ref: ['refs/heads/main'],
     },
     steps: [{
       name: 'Run Go tests',
@@ -82,14 +93,11 @@ local pipelines = import '../util/pipelines.jsonnet';
 
   pipelines.windows('Test (Windows)') {
     trigger: {
-      event: ['pull_request'],
+      ref: ['refs/heads/main'],
     },
     steps: [{
       name: 'Run Go tests',
       image: build_image.windows,
-      environment: {
-        ASSUME_NO_MOVING_GC_UNSAFE_RISK_IT_WITH: 'go1.20',
-      },
       commands: ['go test -tags="nodocker,nonetwork" ./...'],
     }],
   },
